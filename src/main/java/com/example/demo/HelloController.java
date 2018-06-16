@@ -12,6 +12,7 @@ public class HelloController {
 	@ResponseBody
 	@RequestMapping("/hello")
 	public String index(){
+		System.out.println("hello word!");
 		return "hello world";
 	}
 }
