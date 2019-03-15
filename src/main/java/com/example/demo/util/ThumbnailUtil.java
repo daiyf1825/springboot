@@ -9,6 +9,7 @@ import org.bytedeco.javacv.Java2DFrameConverter;
 import org.icepdf.core.pobjects.Document;
 import org.icepdf.core.pobjects.Page;
 import org.icepdf.core.util.GraphicsRenderingHints;
+import org.joda.time.DateTime;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -21,6 +22,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public class ThumbnailUtil {
@@ -122,5 +125,38 @@ public class ThumbnailUtil {
             e.printStackTrace();
             throw new JsonResponseException("生成缩略图异常" + Throwables.getStackTraceAsString(e));
         }
+    }
+
+    @GetMapping("/tendencyChat")
+    public Map<String, Object> tendencyChat() {
+        Map<String, Object> result = new HashMap<>();
+        Map<String, Long> profitMap = new LinkedHashMap<>(7);
+        Map<String, Long> newUserMap = new LinkedHashMap<>(7);
+        java.util.List<String> dateList = new ArrayList<>(7);
+        for (int i = 6; i >= 0; i--) {
+            if (i == 0) {
+                dateList.add("今日");
+            } else {
+                dateList.add(DateTime.now().minusDays(i).toString("MM-dd"));
+            }
+            profitMap.put(DateTime.now().minusDays(i).toString("yyyy-MM-dd"), 0L);
+            newUserMap.put(DateTime.now().minusDays(i).toString("yyyy-MM-dd"), 0L);
+        }
+        //上周新增用户
+        java.util.List<AppUserInfo> newUserWeekList = RespUtil.or500(appUserInfoReadService.listNewUserWeek(null));
+        for (AppUserInfo user : newUserWeekList) {
+            String key = DateUtil.dateToString(user.getCreatedAt());
+            newUserMap.put(key, newUserMap.get(key) + 1);
+        }
+        //上周分润
+        List<BalanceAccountRecord> profitWeekList = RespUtil.or500(balanceAccountRecordReadService.ListWeekProfit(null));
+        for (BalanceAccountRecord balanceAccountRecord : profitWeekList) {
+            String key = DateUtil.dateToString(balanceAccountRecord.getCreatedAt());
+            profitMap.put(key, profitMap.get(key) + balanceAccountRecord.getAmount());
+        }
+        result.put("dateList", dateList);
+        result.put("profitMap", profitMap.values());
+        result.put("newUserMap", newUserMap.values());
+        return result;
     }
 }
